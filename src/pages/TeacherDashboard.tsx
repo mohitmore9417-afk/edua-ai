@@ -11,6 +11,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/hooks/use-toast";
+import AttendanceTracker from "@/components/AttendanceTracker";
+import AssignmentManager from "@/components/AssignmentManager";
+import TimetableManager from "@/components/TimetableManager";
 
 interface Class {
   id: string;
@@ -183,6 +186,7 @@ const TeacherDashboard = () => {
             <TabsTrigger value="classes">My Classes</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
+            <TabsTrigger value="timetable">Timetable</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
           </TabsList>
 
@@ -202,7 +206,7 @@ const TeacherDashboard = () => {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {classes.map((classItem) => (
-                  <Card key={classItem.id} className="hover:shadow-lg transition-shadow">
+                  <Card key={classItem.id} className="hover:shadow-lg transition-all animate-fade-in">
                     <CardHeader>
                       <CardTitle>{classItem.name}</CardTitle>
                       <CardDescription>{classItem.subject}</CardDescription>
@@ -210,7 +214,7 @@ const TeacherDashboard = () => {
                     <CardContent className="space-y-2">
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-muted-foreground">Class Code:</span>
-                        <span className="font-mono font-semibold">{classItem.class_code}</span>
+                        <span className="font-mono font-semibold bg-primary/10 px-2 py-1 rounded">{classItem.class_code}</span>
                       </div>
                       {classItem.room && (
                         <div className="flex items-center justify-between text-sm">
@@ -218,9 +222,11 @@ const TeacherDashboard = () => {
                           <span>{classItem.room}</span>
                         </div>
                       )}
-                      <Button variant="outline" className="w-full mt-4">
-                        View Details
-                      </Button>
+                      {classItem.description && (
+                        <p className="text-sm text-muted-foreground pt-2 border-t">
+                          {classItem.description}
+                        </p>
+                      )}
                     </CardContent>
                   </Card>
                 ))}
@@ -229,29 +235,69 @@ const TeacherDashboard = () => {
           </TabsContent>
 
           <TabsContent value="attendance">
-            <Card>
-              <CardHeader>
-                <CardTitle>Attendance Tracking</CardTitle>
-                <CardDescription>Mark and review student attendance</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-12 text-muted-foreground">
-                <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Attendance management coming soon</p>
-              </CardContent>
-            </Card>
+            {classes.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12 text-muted-foreground">
+                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Create a class first to track attendance</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                <Label>Select a class to mark attendance</Label>
+                <div className="grid gap-4">
+                  {classes.map((classItem) => (
+                    <AttendanceTracker
+                      key={classItem.id}
+                      classId={classItem.id}
+                      className={classItem.name}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="assignments">
-            <Card>
-              <CardHeader>
-                <CardTitle>Assignments</CardTitle>
-                <CardDescription>Create and manage assignments</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-12 text-muted-foreground">
-                <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Assignment management coming soon</p>
-              </CardContent>
-            </Card>
+            {classes.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12 text-muted-foreground">
+                  <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Create a class first to manage assignments</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {classes.map((classItem) => (
+                  <AssignmentManager
+                    key={classItem.id}
+                    classId={classItem.id}
+                    className={classItem.name}
+                  />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="timetable">
+            {classes.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12 text-muted-foreground">
+                  <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Create a class first to manage timetables</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {classes.map((classItem) => (
+                  <TimetableManager
+                    key={classItem.id}
+                    classId={classItem.id}
+                    className={classItem.name}
+                  />
+                ))}
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="announcements">

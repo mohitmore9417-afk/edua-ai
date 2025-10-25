@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import StudentAssignments from "@/components/StudentAssignments";
 
 interface EnrolledClass {
   id: string;
@@ -225,16 +226,7 @@ const StudentDashboard = () => {
           </TabsContent>
 
           <TabsContent value="assignments">
-            <Card>
-              <CardHeader>
-                <CardTitle>My Assignments</CardTitle>
-                <CardDescription>View and submit your assignments</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-12 text-muted-foreground">
-                <FileText className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Assignment view coming soon</p>
-              </CardContent>
-            </Card>
+            <StudentAssignments />
           </TabsContent>
 
           <TabsContent value="grades">

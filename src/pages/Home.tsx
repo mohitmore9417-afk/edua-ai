@@ -77,34 +77,34 @@ const Home = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-accent/5 to-transparent" />
         <div className="container mx-auto px-4 py-20 md:py-32 relative">
           <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="inline-block">
+            <div className="space-y-8 animate-fade-in">
+              <div className="inline-block animate-slide-in-left">
                 <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm font-medium">
                   <Brain className="w-4 h-4" />
                   AI-Powered Education Platform
                 </span>
               </div>
-              <h1 className="text-5xl md:text-6xl font-bold leading-tight">
+              <h1 className="text-5xl md:text-6xl font-bold leading-tight animate-fade-in" style={{animationDelay: "0.1s"}}>
                 Smarter Learning.
                 <span className="block bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                   Simpler Teaching.
                 </span>
               </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed">
+              <p className="text-xl text-muted-foreground leading-relaxed animate-fade-in" style={{animationDelay: "0.2s"}}>
                 AI-powered classroom management to save teachers time and help students grow. 
                 Manage attendance, assignments, and analytics all in one intelligent platform.
               </p>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-4 animate-fade-in" style={{animationDelay: "0.3s"}}>
                 <Link to="/auth">
-                  <Button size="lg" className="w-full sm:w-auto">
+                  <Button size="lg" className="w-full sm:w-auto transition-all hover:scale-105">
                     Launch App
                   </Button>
                 </Link>
-                <Button size="lg" variant="outline" className="w-full sm:w-auto">
+                <Button size="lg" variant="outline" className="w-full sm:w-auto transition-all hover:scale-105">
                   Watch Demo
                 </Button>
               </div>
-              <div className="flex items-center gap-8 pt-4">
+              <div className="flex items-center gap-8 pt-4 animate-fade-in" style={{animationDelay: "0.4s"}}>
                 <div className="flex items-center gap-2">
                   <CheckCircle className="w-5 h-5 text-accent" />
                   <span className="text-sm text-muted-foreground">No setup required</span>
@@ -115,12 +115,12 @@ const Home = () => {
                 </div>
               </div>
             </div>
-            <div className="relative">
-              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl blur-3xl" />
+            <div className="relative animate-fade-in" style={{animationDelay: "0.2s"}}>
+              <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-accent/20 rounded-3xl blur-3xl animate-pulse" style={{animationDuration: "4s"}} />
               <img
                 src={heroImage}
                 alt="Students learning with technology"
-                className="relative rounded-3xl shadow-2xl w-full"
+                className="relative rounded-3xl shadow-2xl w-full transition-transform hover:scale-105 duration-500"
               />
             </div>
           </div>
@@ -140,8 +140,12 @@ const Home = () => {
           </div>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="p-6 hover:shadow-lg transition-all hover:-translate-y-1 border-border bg-card">
-                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4">
+              <Card 
+                key={index} 
+                className="p-6 hover:shadow-lg transition-all hover:-translate-y-1 border-border bg-card animate-fade-in group"
+                style={{animationDelay: `${index * 0.1}s`}}
+              >
+                <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
                   <feature.icon className="w-6 h-6 text-white" />
                 </div>
                 <h3 className="text-xl font-semibold mb-2">{feature.title}</h3>

@@ -1,1 +1,4 @@
 project_id = "svihfxzseqklxgwidcja"
+
+[functions.ai-grading]
+verify_jwt = true
