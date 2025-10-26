@@ -33,13 +33,17 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.user) {
-        const { data: profile } = await supabase
+        const { data: profile, error: profileError } = await (supabase as any)
           .from("profiles")
           .select("approval_status, role")
           .eq("id", data.user.id)
-          .single();
+          .maybeSingle();
 
-        if ((profile as any)?.approval_status === "pending") {
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+        }
+
+        if (profile?.approval_status === "pending") {
           await supabase.auth.signOut();
           toast({
             title: "Account Pending",
@@ -50,7 +54,7 @@ const Auth = () => {
           return;
         }
 
-        if ((profile as any)?.approval_status === "rejected") {
+        if (profile?.approval_status === "rejected") {
           await supabase.auth.signOut();
           toast({
             title: "Account Rejected",

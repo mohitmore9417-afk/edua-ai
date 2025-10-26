@@ -29,26 +29,35 @@ const AdminDashboard = () => {
   }, []);
 
   const checkAdminAccess = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        navigate("/auth");
+        return;
+      }
+
+      const { data: roles, error } = await (supabase as any)
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", user.id)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error checking admin access:", error);
+      }
+
+      if (!roles || roles?.role !== "admin") {
+        toast({
+          title: "Access Denied",
+          description: "You don't have admin privileges",
+          variant: "destructive",
+        });
+        navigate("/");
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
       navigate("/auth");
-      return;
-    }
-
-    const { data: roles } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
-    if (roles?.role !== "admin") {
-      toast({
-        title: "Access Denied",
-        description: "You don't have admin privileges",
-        variant: "destructive",
-      });
-      navigate("/");
     }
   };
 
@@ -80,11 +89,20 @@ const AdminDashboard = () => {
   };
 
   const fetchUsers = async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, role, approval_status, created_at")
-      .order("created_at", { ascending: false });
-    setUsers((data as any) || []);
+    try {
+      const { data, error } = await (supabase as any)
+        .from("profiles")
+        .select("id, full_name, email, role, approval_status, created_at")
+        .order("created_at", { ascending: false });
+      
+      if (error) {
+        console.error("Error fetching users:", error);
+      } else {
+        setUsers((data as unknown as any[]) || []);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+    }
   };
 
   const fetchClasses = async () => {

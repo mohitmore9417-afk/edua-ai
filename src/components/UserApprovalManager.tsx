@@ -25,52 +25,60 @@ const UserApprovalManager = () => {
   }, []);
 
   const fetchPendingUsers = async () => {
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("id, full_name, email, role, approval_status, created_at")
-      .eq("approval_status", "pending")
-      .order("created_at", { ascending: false });
+    try {
+      const { data, error } = await supabase
+        .from("profiles" as any)
+        .select("id, full_name, email, role, approval_status, created_at")
+        .eq("approval_status", "pending")
+        .order("created_at", { ascending: false });
 
-    if (error) {
-      toast({
-        title: "Error fetching users",
-        description: error.message,
-        variant: "destructive",
-      });
-    } else {
-      setPendingUsers((data as any) || []);
+      if (error) {
+        console.error("Error fetching pending users:", error);
+        toast({
+          title: "Error fetching users",
+          description: error.message,
+          variant: "destructive",
+        });
+      } else {
+        setPendingUsers((data as unknown as PendingUser[]) || []);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const updateApprovalStatus = async (userId: string, status: "approved" | "rejected") => {
-    const { error } = await supabase.rpc('update_approval_status', {
-      p_user_id: userId,
-      p_status: status
-    });
-
-    if (error) {
-      // Fallback to direct update if RPC doesn't exist
-      const { error: updateError } = await supabase
+    try {
+      const { error } = await (supabase as any)
         .from("profiles")
-        .update({ approval_status: status } as any)
+        .update({ approval_status: status })
         .eq("id", userId);
       
-      if (updateError) {
+      if (error) {
+        console.error("Error updating approval status:", error);
         toast({
           title: "Error updating status",
-          description: updateError.message,
+          description: error.message,
           variant: "destructive",
         });
         return;
       }
+      
+      toast({
+        title: status === "approved" ? "User approved!" : "User rejected",
+        description: `User has been ${status}`,
+      });
+      fetchPendingUsers();
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast({
+        title: "Error",
+        description: "Failed to update approval status",
+        variant: "destructive",
+      });
     }
-    
-    toast({
-      title: status === "approved" ? "User approved!" : "User rejected",
-      description: `User has been ${status}`,
-    });
-    fetchPendingUsers();
   };
 
   if (loading) {
