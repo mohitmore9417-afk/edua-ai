@@ -1,16 +1,18 @@
-import { useEffect, useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { BookOpen, Calendar, FileText, Bell, TrendingUp } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useNavigate } from "react-router-dom";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import DashboardLayout from "@/components/DashboardLayout";
+import StudentAssignments from "@/components/StudentAssignments";
+import StudentAnnouncements from "@/components/StudentAnnouncements";
+import StudentTimetable from "@/components/StudentTimetable";
+import { BookOpen, Calendar, FileText, Bell } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { toast } from "@/hooks/use-toast";
-import StudentAssignments from "@/components/StudentAssignments";
 
 interface EnrolledClass {
   id: string;
@@ -182,9 +184,9 @@ const StudentDashboard = () => {
         <Tabs defaultValue="classes" className="w-full">
           <TabsList>
             <TabsTrigger value="classes">My Classes</TabsTrigger>
+            <TabsTrigger value="timetable">Timetable</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
-            <TabsTrigger value="grades">Grades</TabsTrigger>
-            <TabsTrigger value="attendance">Attendance</TabsTrigger>
+            <TabsTrigger value="announcements">Announcements</TabsTrigger>
           </TabsList>
 
           <TabsContent value="classes" className="space-y-4">
@@ -225,34 +227,16 @@ const StudentDashboard = () => {
             )}
           </TabsContent>
 
+          <TabsContent value="timetable" className="space-y-4">
+            <StudentTimetable />
+          </TabsContent>
+
           <TabsContent value="assignments">
             <StudentAssignments />
           </TabsContent>
 
-          <TabsContent value="grades">
-            <Card>
-              <CardHeader>
-                <CardTitle>My Grades</CardTitle>
-                <CardDescription>Track your academic performance</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-12 text-muted-foreground">
-                <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Grades dashboard coming soon</p>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="attendance">
-            <Card>
-              <CardHeader>
-                <CardTitle>My Attendance</CardTitle>
-                <CardDescription>View your attendance record</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-12 text-muted-foreground">
-                <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Attendance record coming soon</p>
-              </CardContent>
-            </Card>
+          <TabsContent value="announcements">
+            <StudentAnnouncements />
           </TabsContent>
         </Tabs>
       </div>

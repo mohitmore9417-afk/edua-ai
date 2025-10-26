@@ -1,10 +1,14 @@
 import { useEffect, useState } from "react";
-import DashboardLayout from "@/components/DashboardLayout";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Users, BookOpen, TrendingUp, Activity } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import DashboardLayout from "@/components/DashboardLayout";
+import UserApprovalManager from "@/components/UserApprovalManager";
+import { Users, BookOpen, GraduationCap, UserCheck } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -14,56 +18,85 @@ const AdminDashboard = () => {
     totalStudents: 0,
     totalTeachers: 0,
   });
+  const [users, setUsers] = useState<any[]>([]);
+  const [classes, setClasses] = useState<any[]>([]);
 
   useEffect(() => {
-    const checkAuth = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role !== "admin") {
-        navigate("/");
-      }
-    };
-
-    const fetchStats = async () => {
-      const { count: usersCount } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true });
-
-      const { count: classesCount } = await supabase
-        .from("classes")
-        .select("*", { count: "exact", head: true });
-
-      const { count: studentsCount } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "student");
-
-      const { count: teachersCount } = await supabase
-        .from("profiles")
-        .select("*", { count: "exact", head: true })
-        .eq("role", "teacher");
-
-      setStats({
-        totalUsers: usersCount || 0,
-        totalClasses: classesCount || 0,
-        totalStudents: studentsCount || 0,
-        totalTeachers: teachersCount || 0,
-      });
-    };
-
-    checkAuth();
+    checkAdminAccess();
     fetchStats();
-  }, [navigate]);
+    fetchUsers();
+    fetchClasses();
+  }, []);
+
+  const checkAdminAccess = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (roles?.role !== "admin") {
+      toast({
+        title: "Access Denied",
+        description: "You don't have admin privileges",
+        variant: "destructive",
+      });
+      navigate("/");
+    }
+  };
+
+  const fetchStats = async () => {
+    const { count: usersCount } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true });
+
+    const { count: classesCount } = await supabase
+      .from("classes")
+      .select("*", { count: "exact", head: true });
+
+    const { count: studentsCount } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "student");
+
+    const { count: teachersCount } = await supabase
+      .from("profiles")
+      .select("*", { count: "exact", head: true })
+      .eq("role", "teacher");
+
+    setStats({
+      totalUsers: usersCount || 0,
+      totalClasses: classesCount || 0,
+      totalStudents: studentsCount || 0,
+      totalTeachers: teachersCount || 0,
+    });
+  };
+
+  const fetchUsers = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, email, role, approval_status, created_at")
+      .order("created_at", { ascending: false });
+    setUsers((data as any) || []);
+  };
+
+  const fetchClasses = async () => {
+    const { data } = await supabase
+      .from("classes")
+      .select(`
+        *,
+        profiles:teacher_id (full_name)
+      `)
+      .order("created_at", { ascending: false });
+    setClasses(data || []);
+  };
 
   const statCards = [
     {
@@ -81,13 +114,13 @@ const AdminDashboard = () => {
     {
       title: "Students",
       value: stats.totalStudents,
-      icon: TrendingUp,
+      icon: GraduationCap,
       description: "Enrolled students",
     },
     {
       title: "Teachers",
       value: stats.totalTeachers,
-      icon: Activity,
+      icon: UserCheck,
       description: "Active educators",
     },
   ];
@@ -132,35 +165,47 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>System Overview</CardTitle>
-                <CardDescription>
-                  Platform health and recent activity
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>System analytics and monitoring coming soon</p>
-                </div>
-              </CardContent>
-            </Card>
+            <UserApprovalManager />
           </TabsContent>
 
           <TabsContent value="users" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>User Management</CardTitle>
-                <CardDescription>
-                  View and manage teachers and students
-                </CardDescription>
+                <CardTitle>All Users</CardTitle>
+                <CardDescription>Manage system users</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>User management interface coming soon</p>
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {users.map((user) => (
+                      <TableRow key={user.id}>
+                        <TableCell>{user.full_name}</TableCell>
+                        <TableCell>{user.email}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="capitalize">
+                            {user.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge 
+                            variant={user.approval_status === "approved" ? "default" : "secondary"}
+                            className="capitalize"
+                          >
+                            {user.approval_status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
@@ -168,16 +213,34 @@ const AdminDashboard = () => {
           <TabsContent value="classes" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Class Management</CardTitle>
-                <CardDescription>
-                  Oversee all classes and enrollments
-                </CardDescription>
+                <CardTitle>All Classes</CardTitle>
+                <CardDescription>View and manage classes</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <BookOpen className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Class management interface coming soon</p>
-                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Class Name</TableHead>
+                      <TableHead>Subject</TableHead>
+                      <TableHead>Teacher</TableHead>
+                      <TableHead>Room</TableHead>
+                      <TableHead>Code</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {classes.map((cls: any) => (
+                      <TableRow key={cls.id}>
+                        <TableCell className="font-medium">{cls.name}</TableCell>
+                        <TableCell>{cls.subject}</TableCell>
+                        <TableCell>{cls.profiles?.full_name}</TableCell>
+                        <TableCell>{cls.room || "N/A"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{cls.class_code}</Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
           </TabsContent>
@@ -185,15 +248,33 @@ const AdminDashboard = () => {
           <TabsContent value="reports" className="space-y-4">
             <Card>
               <CardHeader>
-                <CardTitle>Analytics & Reports</CardTitle>
-                <CardDescription>
-                  Generate insights and export data
-                </CardDescription>
+                <CardTitle>System Reports</CardTitle>
+                <CardDescription>Analytics and insights</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12 text-muted-foreground">
-                  <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                  <p>Reporting dashboard coming soon</p>
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">Approval Rate</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {users.length > 0 
+                            ? Math.round((users.filter((u: any) => u.approval_status === "approved").length / users.length) * 100)
+                            : 0}%
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card>
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-sm">Active Classes</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">{stats.totalClasses}</div>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </CardContent>
             </Card>

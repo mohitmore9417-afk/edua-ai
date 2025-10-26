@@ -35,9 +35,31 @@ const Auth = () => {
       if (data.user) {
         const { data: profile } = await supabase
           .from("profiles")
-          .select("role")
+          .select("approval_status, role")
           .eq("id", data.user.id)
           .single();
+
+        if ((profile as any)?.approval_status === "pending") {
+          await supabase.auth.signOut();
+          toast({
+            title: "Account Pending",
+            description: "Your account is awaiting admin approval. Please check back later.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
+
+        if ((profile as any)?.approval_status === "rejected") {
+          await supabase.auth.signOut();
+          toast({
+            title: "Account Rejected",
+            description: "Your account registration was not approved. Please contact support.",
+            variant: "destructive",
+          });
+          setIsLoading(false);
+          return;
+        }
 
         toast({
           title: "Welcome back!",
@@ -86,20 +108,15 @@ const Auth = () => {
       if (error) throw error;
 
       toast({
-        title: "Account created!",
-        description: "Redirecting to your dashboard...",
+        title: "Registration Successful!",
+        description: "Your account is pending admin approval. You'll be notified once approved.",
       });
 
-      // Redirect based on role
-      setTimeout(() => {
-        if (role === "admin") {
-          navigate("/admin");
-        } else if (role === "teacher") {
-          navigate("/teacher");
-        } else {
-          navigate("/student");
-        }
-      }, 1000);
+      // Clear form
+      setSignupEmail("");
+      setSignupPassword("");
+      setFullName("");
+      setRole("student");
     } catch (error: any) {
       toast({
         title: "Signup failed",
