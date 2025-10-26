@@ -5,8 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import DashboardLayout from "@/components/DashboardLayout";
-import UserApprovalManager from "@/components/UserApprovalManager";
-import { Users, BookOpen, GraduationCap, UserCheck } from "lucide-react";
+import { Users, BookOpen, GraduationCap, UserCheck, Activity } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 
@@ -37,17 +36,18 @@ const AdminDashboard = () => {
         return;
       }
 
-      const { data: roles, error } = await (supabase as any)
-        .from("user_roles")
+      // Check if user is admin from profiles table
+      const { data: profile, error } = await supabase
+        .from("profiles")
         .select("role")
-        .eq("user_id", user.id)
+        .eq("id", user.id)
         .maybeSingle();
 
       if (error) {
         console.error("Error checking admin access:", error);
       }
 
-      if (!roles || roles?.role !== "admin") {
+      if (!profile || profile?.role !== "admin") {
         toast({
           title: "Access Denied",
           description: "You don't have admin privileges",
@@ -90,9 +90,9 @@ const AdminDashboard = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from("profiles")
-        .select("id, full_name, email, role, approval_status, created_at")
+        .select("id, full_name, email, role, created_at")
         .order("created_at", { ascending: false });
       
       if (error) {
@@ -183,7 +183,18 @@ const AdminDashboard = () => {
           </TabsList>
 
           <TabsContent value="overview" className="space-y-4">
-            <UserApprovalManager />
+            <Card>
+              <CardHeader>
+                <CardTitle>System Overview</CardTitle>
+                <CardDescription>Platform health and recent activity</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="text-center py-12 text-muted-foreground">
+                  <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>User approval system coming soon. All users can currently access the system.</p>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
 
           <TabsContent value="users" className="space-y-4">
@@ -199,7 +210,6 @@ const AdminDashboard = () => {
                       <TableHead>Name</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -210,14 +220,6 @@ const AdminDashboard = () => {
                         <TableCell>
                           <Badge variant="outline" className="capitalize">
                             {user.role}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge 
-                            variant={user.approval_status === "approved" ? "default" : "secondary"}
-                            className="capitalize"
-                          >
-                            {user.approval_status}
                           </Badge>
                         </TableCell>
                       </TableRow>
@@ -274,13 +276,11 @@ const AdminDashboard = () => {
                   <div className="grid grid-cols-2 gap-4">
                     <Card>
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-sm">Approval Rate</CardTitle>
+                        <CardTitle className="text-sm">Total Users</CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">
-                          {users.length > 0 
-                            ? Math.round((users.filter((u: any) => u.approval_status === "approved").length / users.length) * 100)
-                            : 0}%
+                          {users.length}
                         </div>
                       </CardContent>
                     </Card>
