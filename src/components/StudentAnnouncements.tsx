@@ -36,6 +36,7 @@ const StudentAnnouncements = () => {
       .eq("student_id", user.id);
 
     if (!enrollments || enrollments.length === 0) {
+      setAnnouncements([]);
       setLoading(false);
       return;
     }
@@ -105,7 +106,8 @@ const StudentAnnouncements = () => {
         {announcements.length === 0 ? (
           <div className="text-center py-8 text-muted-foreground">
             <Megaphone className="w-12 h-12 mx-auto mb-2 opacity-50" />
-            <p>No announcements yet</p>
+            <p className="font-medium mb-1">No announcements yet</p>
+            <p className="text-sm">Join a class to see announcements from your teachers</p>
           </div>
         ) : (
           announcements.map((announcement) => (
