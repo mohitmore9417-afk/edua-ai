@@ -11,12 +11,10 @@ interface Announcement {
   title: string;
   content: string;
   created_at: string;
-  classes: {
-    name: string;
-  };
-  profiles: {
-    full_name: string;
-  };
+  class_id: string;
+  created_by: string;
+  class_name?: string;
+  creator_name?: string;
 }
 
 const StudentAnnouncements = () => {
@@ -45,16 +43,11 @@ const StudentAnnouncements = () => {
     const classIds = enrollments.map(e => e.class_id);
 
     // Fetch announcements for enrolled classes
-    const { data, error } = await supabase
+    const { data: announcementsData, error } = await supabase
       .from("announcements")
-      .select(`
-        *,
-        classes:class_id (name),
-        profiles:created_by (full_name)
-      `)
+      .select("*")
       .in("class_id", classIds)
-      .order("created_at", { ascending: false })
-      .limit(10);
+      .order("created_at", { ascending: false });
 
     if (error) {
       toast({
@@ -62,9 +55,36 @@ const StudentAnnouncements = () => {
         description: error.message,
         variant: "destructive",
       });
-    } else {
-      setAnnouncements(data as any || []);
+      setLoading(false);
+      return;
     }
+
+    if (!announcementsData || announcementsData.length === 0) {
+      setLoading(false);
+      return;
+    }
+
+    // Fetch class names
+    const { data: classesData } = await supabase
+      .from("classes")
+      .select("id, name")
+      .in("id", classIds);
+
+    // Fetch creator names
+    const creatorIds = [...new Set(announcementsData.map(a => a.created_by))];
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, full_name")
+      .in("id", creatorIds);
+
+    // Combine the data
+    const enrichedAnnouncements = announcementsData.map(announcement => ({
+      ...announcement,
+      class_name: classesData?.find(c => c.id === announcement.class_id)?.name,
+      creator_name: profilesData?.find(p => p.id === announcement.created_by)?.full_name,
+    }));
+
+    setAnnouncements(enrichedAnnouncements);
     setLoading(false);
   };
 
@@ -95,7 +115,7 @@ const StudentAnnouncements = () => {
             >
               <div className="flex items-start justify-between mb-2">
                 <h3 className="font-semibold text-lg">{announcement.title}</h3>
-                <Badge variant="outline">{announcement.classes?.name}</Badge>
+                <Badge variant="outline">{announcement.class_name}</Badge>
               </div>
               <p className="text-muted-foreground mb-3">{announcement.content}</p>
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
@@ -103,7 +123,7 @@ const StudentAnnouncements = () => {
                   <Calendar className="w-3 h-3" />
                   {format(new Date(announcement.created_at), "PPP")}
                 </div>
-                <div>By {announcement.profiles?.full_name}</div>
+                <div>By {announcement.creator_name}</div>
               </div>
             </div>
           ))
