@@ -32,6 +32,7 @@ const StudentDashboard = () => {
   const [enrolledClasses, setEnrolledClasses] = useState<EnrolledClass[]>([]);
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [classCode, setClassCode] = useState("");
+  const [userName, setUserName] = useState<string>("");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -43,13 +44,14 @@ const StudentDashboard = () => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, full_name")
         .eq("id", user.id)
         .single();
 
       if (profile?.role !== "student") {
         navigate("/");
       } else {
+        setUserName(profile.full_name || "Student");
         fetchEnrolledClasses(user.id);
       }
     };
@@ -142,7 +144,7 @@ const StudentDashboard = () => {
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold mb-2">Student Dashboard</h2>
+            <h2 className="text-3xl font-bold mb-2">{userName}</h2>
             <p className="text-muted-foreground">
               Welcome back! Here's your learning overview
             </p>

@@ -29,6 +29,7 @@ const TeacherDashboard = () => {
   const navigate = useNavigate();
   const [classes, setClasses] = useState<Class[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [userName, setUserName] = useState<string>("");
   const [newClass, setNewClass] = useState({
     name: "",
     subject: "",
@@ -46,13 +47,14 @@ const TeacherDashboard = () => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, full_name")
         .eq("id", user.id)
         .single();
 
       if (profile?.role !== "teacher") {
         navigate("/");
       } else {
+        setUserName(profile.full_name || "Teacher");
         fetchClasses(user.id);
       }
     };
@@ -118,7 +120,7 @@ const TeacherDashboard = () => {
       <div className="space-y-8">
         <div className="flex justify-between items-center">
           <div>
-            <h2 className="text-3xl font-bold mb-2">Teacher Dashboard</h2>
+            <h2 className="text-3xl font-bold mb-2">{userName}</h2>
             <p className="text-muted-foreground">
               Manage your classes and student activities
             </p>
