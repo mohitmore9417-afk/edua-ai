@@ -14,6 +14,7 @@ import { toast } from "@/hooks/use-toast";
 import AttendanceTracker from "@/components/AttendanceTracker";
 import AssignmentManager from "@/components/AssignmentManager";
 import TimetableManager from "@/components/TimetableManager";
+import AnnouncementManager from "@/components/AnnouncementManager";
 
 interface Class {
   id: string;
@@ -301,16 +302,24 @@ const TeacherDashboard = () => {
           </TabsContent>
 
           <TabsContent value="announcements">
-            <Card>
-              <CardHeader>
-                <CardTitle>Announcements</CardTitle>
-                <CardDescription>Post updates for your students</CardDescription>
-              </CardHeader>
-              <CardContent className="text-center py-12 text-muted-foreground">
-                <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
-                <p>Announcements feature coming soon</p>
-              </CardContent>
-            </Card>
+            {classes.length === 0 ? (
+              <Card>
+                <CardContent className="text-center py-12 text-muted-foreground">
+                  <Bell className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                  <p>Create a class first to post announcements</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-6">
+                {classes.map((classItem) => (
+                  <AnnouncementManager
+                    key={classItem.id}
+                    classId={classItem.id}
+                    className={classItem.name}
+                  />
+                ))}
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>
