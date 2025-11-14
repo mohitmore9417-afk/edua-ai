@@ -126,6 +126,7 @@ export type Database = {
           created_at: string
           description: string | null
           due_date: string | null
+          file_url: string | null
           id: string
           title: string
           total_points: number | null
@@ -136,6 +137,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          file_url?: string | null
           id?: string
           title: string
           total_points?: number | null
@@ -146,6 +148,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           due_date?: string | null
+          file_url?: string | null
           id?: string
           title?: string
           total_points?: number | null

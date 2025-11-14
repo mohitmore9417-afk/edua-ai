@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Plus, FileText, Calendar, Users, Brain } from "lucide-react";
+import { Plus, FileText, Calendar, Users, Brain, Paperclip } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -17,6 +17,7 @@ interface Assignment {
   due_date: string;
   total_points: number;
   submission_count?: number;
+  file_url?: string;
 }
 
 interface AssignmentManagerProps {
@@ -34,6 +35,8 @@ const AssignmentManager = ({ classId, className }: AssignmentManagerProps) => {
     due_date: "",
     total_points: 100,
   });
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     fetchAssignments();
@@ -61,14 +64,46 @@ const AssignmentManager = ({ classId, className }: AssignmentManagerProps) => {
   };
 
   const handleCreateAssignment = async () => {
+    setIsUploading(true);
+    let fileUrl = null;
+
+    // Upload file if one is selected
+    if (uploadedFile) {
+      const fileExt = uploadedFile.name.split('.').pop();
+      const fileName = `${classId}/${Date.now()}.${fileExt}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('assignment-files')
+        .upload(fileName, uploadedFile);
+
+      if (uploadError) {
+        toast({
+          title: "Error uploading file",
+          description: uploadError.message,
+          variant: "destructive",
+        });
+        setIsUploading(false);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage
+        .from('assignment-files')
+        .getPublicUrl(fileName);
+      
+      fileUrl = urlData.publicUrl;
+    }
+
     const { data, error } = await supabase
       .from("assignments")
       .insert({
         ...newAssignment,
         class_id: classId,
+        file_url: fileUrl,
       })
       .select()
       .single();
+
+    setIsUploading(false);
 
     if (error) {
       toast({
@@ -84,6 +119,7 @@ const AssignmentManager = ({ classId, className }: AssignmentManagerProps) => {
       setAssignments([data, ...assignments]);
       setIsCreateDialogOpen(false);
       setNewAssignment({ title: "", description: "", due_date: "", total_points: 100 });
+      setUploadedFile(null);
     }
   };
 
@@ -150,9 +186,25 @@ const AssignmentManager = ({ classId, className }: AssignmentManagerProps) => {
                   onChange={(e) => setNewAssignment({ ...newAssignment, total_points: parseInt(e.target.value) })}
                 />
               </div>
+              <div>
+                <Label htmlFor="file">Attachment (Optional)</Label>
+                <Input
+                  id="file"
+                  type="file"
+                  onChange={(e) => setUploadedFile(e.target.files?.[0] || null)}
+                  accept=".pdf,.doc,.docx,.txt,.jpg,.jpeg,.png"
+                />
+                {uploadedFile && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Selected: {uploadedFile.name}
+                  </p>
+                )}
+              </div>
             </div>
             <DialogFooter>
-              <Button onClick={handleCreateAssignment}>Create Assignment</Button>
+              <Button onClick={handleCreateAssignment} disabled={isUploading}>
+                {isUploading ? "Uploading..." : "Create Assignment"}
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
@@ -205,6 +257,12 @@ const AssignmentManager = ({ classId, className }: AssignmentManagerProps) => {
                     <Brain className="w-4 h-4 text-primary" />
                     AI Grading Available
                   </div>
+                  {assignment.file_url && (
+                    <div className="flex items-center gap-1">
+                      <Paperclip className="w-4 h-4" />
+                      File attached
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
