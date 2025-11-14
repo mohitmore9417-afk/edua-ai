@@ -7,6 +7,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import StudentAssignments from "@/components/StudentAssignments";
 import StudentAnnouncements from "@/components/StudentAnnouncements";
 import StudentTimetable from "@/components/StudentTimetable";
+import StudentAttendanceStats from "@/components/StudentAttendanceStats";
 import { BookOpen, Calendar, FileText, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -33,6 +34,7 @@ const StudentDashboard = () => {
   const [isJoinDialogOpen, setIsJoinDialogOpen] = useState(false);
   const [classCode, setClassCode] = useState("");
   const [userName, setUserName] = useState<string>("");
+  const [studentId, setStudentId] = useState<string>("");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -52,6 +54,7 @@ const StudentDashboard = () => {
         navigate("/");
       } else {
         setUserName(profile.full_name || "Student");
+        setStudentId(user.id);
         fetchEnrolledClasses(user.id);
       }
     };
@@ -187,6 +190,7 @@ const StudentDashboard = () => {
           <TabsList>
             <TabsTrigger value="classes">My Classes</TabsTrigger>
             <TabsTrigger value="timetable">Timetable</TabsTrigger>
+            <TabsTrigger value="attendance-stats">Attendance Stats</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
           </TabsList>
@@ -231,6 +235,10 @@ const StudentDashboard = () => {
 
           <TabsContent value="timetable" className="space-y-4">
             <StudentTimetable />
+          </TabsContent>
+
+          <TabsContent value="attendance-stats">
+            {studentId && <StudentAttendanceStats studentId={studentId} />}
           </TabsContent>
 
           <TabsContent value="assignments">

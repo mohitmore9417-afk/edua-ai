@@ -15,6 +15,7 @@ import AttendanceTracker from "@/components/AttendanceTracker";
 import AssignmentManager from "@/components/AssignmentManager";
 import TimetableManager from "@/components/TimetableManager";
 import AnnouncementManager from "@/components/AnnouncementManager";
+import TeacherAttendanceStats from "@/components/TeacherAttendanceStats";
 
 interface Class {
   id: string;
@@ -30,6 +31,7 @@ const TeacherDashboard = () => {
   const [classes, setClasses] = useState<Class[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
+  const [teacherId, setTeacherId] = useState<string>("");
   const [newClass, setNewClass] = useState({
     name: "",
     subject: "",
@@ -55,6 +57,7 @@ const TeacherDashboard = () => {
         navigate("/");
       } else {
         setUserName(profile.full_name || "Teacher");
+        setTeacherId(user.id);
         fetchClasses(user.id);
       }
     };
@@ -188,6 +191,7 @@ const TeacherDashboard = () => {
           <TabsList>
             <TabsTrigger value="classes">My Classes</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
+            <TabsTrigger value="attendance-stats">Attendance Stats</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="timetable">Timetable</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
@@ -259,6 +263,10 @@ const TeacherDashboard = () => {
                 </div>
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="attendance-stats">
+            {teacherId && <TeacherAttendanceStats teacherId={teacherId} />}
           </TabsContent>
 
           <TabsContent value="assignments">
