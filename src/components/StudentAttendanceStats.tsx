@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Percent, BookOpen } from "lucide-react";
+import { Percent, BookOpen, TrendingUp } from "lucide-react";
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 interface ClassAttendance {
   classId: string;
@@ -12,6 +13,13 @@ interface ClassAttendance {
   presentClasses: number;
 }
 
+interface TrendData {
+  date: string;
+  percentage: number;
+  present: number;
+  total: number;
+}
+
 interface StudentAttendanceStatsProps {
   studentId: string;
 }
@@ -19,6 +27,7 @@ interface StudentAttendanceStatsProps {
 const StudentAttendanceStats = ({ studentId }: StudentAttendanceStatsProps) => {
   const [classAttendance, setClassAttendance] = useState<ClassAttendance[]>([]);
   const [overallAttendance, setOverallAttendance] = useState<number>(0);
+  const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -81,10 +90,56 @@ const StudentAttendanceStats = ({ studentId }: StudentAttendanceStatsProps) => {
         ? Math.round((totalPresent / totalRecords) * 100)
         : 0;
       setOverallAttendance(overall);
+
+      // Fetch trend data (last 30 days)
+      await fetchTrendData(classIds);
     } catch (error) {
       console.error("Error fetching attendance stats:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTrendData = async (classIds: string[]) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: attendance } = await supabase
+        .from("attendance")
+        .select("date, status")
+        .eq("student_id", studentId)
+        .in("class_id", classIds)
+        .gte("date", thirtyDaysAgo.toISOString().split('T')[0])
+        .order("date", { ascending: true });
+
+      if (!attendance || attendance.length === 0) return;
+
+      // Group by date
+      const dateMap = new Map<string, { present: number; total: number }>();
+      
+      attendance.forEach(record => {
+        const existing = dateMap.get(record.date) || { present: 0, total: 0 };
+        existing.total += 1;
+        if (record.status === "present") {
+          existing.present += 1;
+        }
+        dateMap.set(record.date, existing);
+      });
+
+      // Convert to array and calculate percentages
+      const trend: TrendData[] = Array.from(dateMap.entries())
+        .map(([date, stats]) => ({
+          date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          percentage: Math.round((stats.present / stats.total) * 100),
+          present: stats.present,
+          total: stats.total,
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      setTrendData(trend);
+    } catch (error) {
+      console.error("Error fetching trend data:", error);
     }
   };
 
@@ -122,6 +177,58 @@ const StudentAttendanceStats = ({ studentId }: StudentAttendanceStatsProps) => {
           <p className="text-sm text-muted-foreground mt-1">Across all subjects</p>
         </CardContent>
       </Card>
+
+      {trendData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Your Attendance Trend (Last 30 Days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <AreaChart data={trendData}>
+                <defs>
+                  <linearGradient id="colorAttendance" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0.1}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis 
+                  dataKey="date" 
+                  className="text-xs"
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <YAxis 
+                  domain={[0, 100]}
+                  className="text-xs"
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  label={{ value: 'Attendance %', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                  }}
+                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="percentage"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  fill="url(#colorAttendance)"
+                  name="Attendance %"
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>

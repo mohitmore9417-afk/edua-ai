@@ -1,13 +1,21 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Percent, Users } from "lucide-react";
+import { Percent, Users, TrendingUp } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 interface ClassAttendance {
   classId: string;
   className: string;
   totalStudents: number;
   averageAttendance: number;
+}
+
+interface TrendData {
+  date: string;
+  percentage: number;
+  present: number;
+  total: number;
 }
 
 interface TeacherAttendanceStatsProps {
@@ -17,6 +25,7 @@ interface TeacherAttendanceStatsProps {
 const TeacherAttendanceStats = ({ teacherId }: TeacherAttendanceStatsProps) => {
   const [classAttendance, setClassAttendance] = useState<ClassAttendance[]>([]);
   const [overallAttendance, setOverallAttendance] = useState<number>(0);
+  const [trendData, setTrendData] = useState<TrendData[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -76,10 +85,55 @@ const TeacherAttendanceStats = ({ teacherId }: TeacherAttendanceStatsProps) => {
         ? Math.round((totalPresentRecords / totalAttendanceRecords) * 100)
         : 0;
       setOverallAttendance(overall);
+
+      // Fetch trend data (last 30 days)
+      await fetchTrendData(classes.map(c => c.id));
     } catch (error) {
       console.error("Error fetching attendance stats:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTrendData = async (classIds: string[]) => {
+    try {
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const { data: attendance } = await supabase
+        .from("attendance")
+        .select("date, status")
+        .in("class_id", classIds)
+        .gte("date", thirtyDaysAgo.toISOString().split('T')[0])
+        .order("date", { ascending: true });
+
+      if (!attendance || attendance.length === 0) return;
+
+      // Group by date
+      const dateMap = new Map<string, { present: number; total: number }>();
+      
+      attendance.forEach(record => {
+        const existing = dateMap.get(record.date) || { present: 0, total: 0 };
+        existing.total += 1;
+        if (record.status === "present") {
+          existing.present += 1;
+        }
+        dateMap.set(record.date, existing);
+      });
+
+      // Convert to array and calculate percentages
+      const trend: TrendData[] = Array.from(dateMap.entries())
+        .map(([date, stats]) => ({
+          date: new Date(date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+          percentage: Math.round((stats.present / stats.total) * 100),
+          present: stats.present,
+          total: stats.total,
+        }))
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+      setTrendData(trend);
+    } catch (error) {
+      console.error("Error fetching trend data:", error);
     }
   };
 
@@ -117,6 +171,52 @@ const TeacherAttendanceStats = ({ teacherId }: TeacherAttendanceStatsProps) => {
           <p className="text-sm text-muted-foreground mt-1">Across all your classes</p>
         </CardContent>
       </Card>
+
+      {trendData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5" />
+              Attendance Trend (Last 30 Days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={trendData}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis 
+                  dataKey="date" 
+                  className="text-xs"
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                />
+                <YAxis 
+                  domain={[0, 100]}
+                  className="text-xs"
+                  tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                  label={{ value: 'Attendance %', angle: -90, position: 'insideLeft' }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                  }}
+                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="percentage"
+                  stroke="hsl(var(--primary))"
+                  strokeWidth={2}
+                  dot={{ fill: 'hsl(var(--primary))' }}
+                  name="Attendance %"
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       <Card>
         <CardHeader>
