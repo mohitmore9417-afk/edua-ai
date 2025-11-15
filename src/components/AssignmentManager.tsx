@@ -69,28 +69,45 @@ const AssignmentManager = ({ classId, className }: AssignmentManagerProps) => {
 
     // Upload file if one is selected
     if (uploadedFile) {
-      const fileExt = uploadedFile.name.split('.').pop();
-      const fileName = `${classId}/${Date.now()}.${fileExt}`;
-      
-      const { error: uploadError } = await supabase.storage
-        .from('assignment-files')
-        .upload(fileName, uploadedFile);
+      try {
+        const fileExt = uploadedFile.name.split('.').pop();
+        const fileName = `${classId}/${Date.now()}.${fileExt}`;
+        
+        console.log('Uploading file:', fileName);
+        const { data: uploadData, error: uploadError } = await supabase.storage
+          .from('assignment-files')
+          .upload(fileName, uploadedFile, {
+            cacheControl: '3600',
+            upsert: false
+          });
 
-      if (uploadError) {
+        if (uploadError) {
+          console.error('Upload error:', uploadError);
+          toast({
+            title: "Error uploading file",
+            description: uploadError.message,
+            variant: "destructive",
+          });
+          setIsUploading(false);
+          return;
+        }
+
+        console.log('Upload successful:', uploadData);
+        const { data: urlData } = supabase.storage
+          .from('assignment-files')
+          .getPublicUrl(fileName);
+        
+        fileUrl = urlData.publicUrl;
+      } catch (error) {
+        console.error('Upload exception:', error);
         toast({
           title: "Error uploading file",
-          description: uploadError.message,
+          description: error instanceof Error ? error.message : "Unknown error occurred",
           variant: "destructive",
         });
         setIsUploading(false);
         return;
       }
-
-      const { data: urlData } = supabase.storage
-        .from('assignment-files')
-        .getPublicUrl(fileName);
-      
-      fileUrl = urlData.publicUrl;
     }
 
     const { data, error } = await supabase
