@@ -16,6 +16,7 @@ import AssignmentManager from "@/components/AssignmentManager";
 import TimetableManager from "@/components/TimetableManager";
 import AnnouncementManager from "@/components/AnnouncementManager";
 import TeacherAttendanceStats from "@/components/TeacherAttendanceStats";
+import IndividualStudentAttendance from "@/components/IndividualStudentAttendance";
 
 interface Class {
   id: string;
@@ -195,6 +196,7 @@ const TeacherDashboard = () => {
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="timetable">Timetable</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
+            <TabsTrigger value="individual">Student Tracker</TabsTrigger>
           </TabsList>
 
           <TabsContent value="classes" className="space-y-4">
@@ -267,6 +269,10 @@ const TeacherDashboard = () => {
 
           <TabsContent value="attendance-stats">
             {teacherId && <TeacherAttendanceStats teacherId={teacherId} />}
+          </TabsContent>
+
+          <TabsContent value="individual">
+            {teacherId && <IndividualStudentAttendance teacherId={teacherId} />}
           </TabsContent>
 
           <TabsContent value="assignments">
