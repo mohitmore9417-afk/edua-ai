@@ -17,6 +17,7 @@ import TimetableManager from "@/components/TimetableManager";
 import AnnouncementManager from "@/components/AnnouncementManager";
 import TeacherAttendanceStats from "@/components/TeacherAttendanceStats";
 import IndividualStudentAttendance from "@/components/IndividualStudentAttendance";
+import AttendanceAnalytics from "@/components/AttendanceAnalytics";
 
 interface Class {
   id: string;
@@ -189,14 +190,15 @@ const TeacherDashboard = () => {
         </div>
 
         <Tabs defaultValue="classes" className="w-full">
-          <TabsList>
-            <TabsTrigger value="classes">My Classes</TabsTrigger>
+          <TabsList className="grid grid-cols-4 lg:grid-cols-8">
+            <TabsTrigger value="classes">Classes</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
-            <TabsTrigger value="attendance-stats">Attendance Stats</TabsTrigger>
+            <TabsTrigger value="attendance-stats">Stats</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="timetable">Timetable</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
-            <TabsTrigger value="individual">Student Tracker</TabsTrigger>
+            <TabsTrigger value="individual">Tracker</TabsTrigger>
           </TabsList>
 
           <TabsContent value="classes" className="space-y-4">
@@ -269,6 +271,10 @@ const TeacherDashboard = () => {
 
           <TabsContent value="attendance-stats">
             {teacherId && <TeacherAttendanceStats teacherId={teacherId} />}
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            {teacherId && <AttendanceAnalytics userId={teacherId} userRole="teacher" />}
           </TabsContent>
 
           <TabsContent value="individual">
