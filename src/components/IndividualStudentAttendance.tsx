@@ -2,7 +2,10 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { User, TrendingUp, BookOpen } from "lucide-react";
+import { User, TrendingUp, BookOpen, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { exportIndividualStudentToPDF, exportAttendanceToCSV } from "@/lib/exportUtils";
+import { toast } from "@/hooks/use-toast";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 interface Student {
@@ -218,6 +221,49 @@ const IndividualStudentAttendance = ({ teacherId }: IndividualStudentAttendanceP
 
   const selectedStudent = students.find(s => s.id === selectedStudentId);
 
+  const handleExportCSV = () => {
+    if (!selectedStudent) return;
+    const exportData = classAttendance.map(item => ({
+      className: item.className,
+      subject: item.subject,
+      averageAttendance: item.percentage,
+      presentClasses: item.present,
+      totalClasses: item.total,
+    }));
+    exportAttendanceToCSV(
+      exportData,
+      overallPercentage,
+      `${selectedStudent.full_name}-attendance-report`,
+      'student'
+    );
+    toast({
+      title: "Export successful",
+      description: "Student attendance data exported as CSV",
+    });
+  };
+
+  const handleExportPDF = () => {
+    if (!selectedStudent) return;
+    const exportData = classAttendance.map(item => ({
+      className: item.className,
+      subject: item.subject,
+      averageAttendance: item.percentage,
+      presentClasses: item.present,
+      totalClasses: item.total,
+    }));
+    exportIndividualStudentToPDF(
+      selectedStudent.full_name,
+      exportData,
+      overallPercentage,
+      trendData,
+      `${selectedStudent.full_name}-attendance-report`
+    );
+    toast({
+      title: "Export successful",
+      description: "Student attendance data exported as PDF",
+    });
+  };
+
   return (
     <div className="space-y-4">
       <Card>
@@ -253,6 +299,17 @@ const IndividualStudentAttendance = ({ teacherId }: IndividualStudentAttendanceP
 
       {!loading && selectedStudentId && (
         <>
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={handleExportCSV}>
+              <Download className="w-4 h-4 mr-2" />
+              Export CSV
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleExportPDF}>
+              <Download className="w-4 h-4 mr-2" />
+              Export PDF
+            </Button>
+          </div>
+
           <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
             <CardHeader>
               <CardTitle>

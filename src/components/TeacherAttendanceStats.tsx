@@ -1,7 +1,10 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { Percent, Users, TrendingUp } from "lucide-react";
+import { Percent, Users, TrendingUp, Download } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { exportAttendanceToCSV, exportAttendanceToPDF } from "@/lib/exportUtils";
+import { toast } from "@/hooks/use-toast";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from "recharts";
 
 interface ClassAttendance {
@@ -157,8 +160,54 @@ const TeacherAttendanceStats = ({ teacherId }: TeacherAttendanceStatsProps) => {
     );
   }
 
+  const handleExportCSV = () => {
+    const exportData = classAttendance.map(item => ({
+      className: item.className,
+      subject: '',
+      totalStudents: item.totalStudents,
+      averageAttendance: item.averageAttendance,
+    }));
+    exportAttendanceToCSV(exportData, overallAttendance, 'teacher-attendance-report', 'teacher');
+    toast({
+      title: "Export successful",
+      description: "Attendance data exported as CSV",
+    });
+  };
+
+  const handleExportPDF = () => {
+    const exportData = classAttendance.map(item => ({
+      className: item.className,
+      subject: '',
+      totalStudents: item.totalStudents,
+      averageAttendance: item.averageAttendance,
+    }));
+    exportAttendanceToPDF(
+      exportData,
+      overallAttendance,
+      trendData,
+      'teacher-attendance-report',
+      'Teacher Attendance Report',
+      'teacher'
+    );
+    toast({
+      title: "Export successful",
+      description: "Attendance data exported as PDF",
+    });
+  };
+
   return (
     <div className="space-y-4">
+      <div className="flex justify-end gap-2">
+        <Button variant="outline" size="sm" onClick={handleExportCSV}>
+          <Download className="w-4 h-4 mr-2" />
+          Export CSV
+        </Button>
+        <Button variant="outline" size="sm" onClick={handleExportPDF}>
+          <Download className="w-4 h-4 mr-2" />
+          Export PDF
+        </Button>
+      </div>
+
       <Card className="bg-gradient-to-br from-primary/10 to-primary/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
