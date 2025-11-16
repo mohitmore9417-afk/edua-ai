@@ -9,6 +9,7 @@ import StudentAnnouncements from "@/components/StudentAnnouncements";
 import StudentTimetable from "@/components/StudentTimetable";
 import StudentAttendanceStats from "@/components/StudentAttendanceStats";
 import AttendanceAnalytics from "@/components/AttendanceAnalytics";
+import StudentResources from "@/components/StudentResources";
 import { BookOpen, Calendar, FileText, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -188,13 +189,14 @@ const StudentDashboard = () => {
         </div>
 
         <Tabs defaultValue="classes" className="w-full">
-          <TabsList className="grid grid-cols-3 lg:grid-cols-6">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-7">
             <TabsTrigger value="classes">Classes</TabsTrigger>
             <TabsTrigger value="timetable">Timetable</TabsTrigger>
             <TabsTrigger value="attendance-stats">Stats</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="assignments">Assignments</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
+            <TabsTrigger value="resources">Resources</TabsTrigger>
           </TabsList>
 
           <TabsContent value="classes" className="space-y-4">
@@ -253,6 +255,10 @@ const StudentDashboard = () => {
 
           <TabsContent value="announcements">
             <StudentAnnouncements />
+          </TabsContent>
+
+          <TabsContent value="resources">
+            <StudentResources />
           </TabsContent>
         </Tabs>
       </div>
