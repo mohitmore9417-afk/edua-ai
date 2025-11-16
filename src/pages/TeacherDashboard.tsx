@@ -13,12 +13,15 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { toast } from "@/hooks/use-toast";
 import AttendanceTracker from "@/components/AttendanceTracker";
 import AssignmentManager from "@/components/AssignmentManager";
+import AssignmentSubmissions from "@/components/AssignmentSubmissions";
 import TimetableManager from "@/components/TimetableManager";
 import AnnouncementManager from "@/components/AnnouncementManager";
 import TeacherAttendanceStats from "@/components/TeacherAttendanceStats";
 import IndividualStudentAttendance from "@/components/IndividualStudentAttendance";
 import AttendanceAnalytics from "@/components/AttendanceAnalytics";
 import ResourceManager from "@/components/ResourceManager";
+import AssignmentSubmissions from "@/components/AssignmentSubmissions";
+import NotificationBell from "@/components/NotificationBell";
 
 interface Class {
   id: string;
@@ -35,6 +38,7 @@ const TeacherDashboard = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [userName, setUserName] = useState<string>("");
   const [teacherId, setTeacherId] = useState<string>("");
+  const [selectedAssignmentForSubmissions, setSelectedAssignmentForSubmissions] = useState<{id: string, title: string, points: number} | null>(null);
   const [newClass, setNewClass] = useState({
     name: "",
     subject: "",
@@ -131,11 +135,13 @@ const TeacherDashboard = () => {
               Manage your classes and student activities
             </p>
           </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Create Class
+          <div className="flex gap-2">
+            <NotificationBell />
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Class
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -188,6 +194,7 @@ const TeacherDashboard = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <Tabs defaultValue="classes" className="w-full">

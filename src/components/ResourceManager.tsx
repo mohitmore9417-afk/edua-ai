@@ -7,10 +7,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Upload, FileText, Download, Trash2, FolderOpen } from "lucide-react";
+import { Upload, FileText, Download, Trash2, FolderOpen, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import FilePreview from "@/components/FilePreview";
 
 interface Resource {
   id: string;
@@ -20,6 +21,7 @@ interface Resource {
   file_url: string;
   file_name: string;
   file_size: number | null;
+  category: string | null;
   created_at: string;
   classes: {
     name: string;
@@ -32,16 +34,28 @@ interface TeacherClass {
   subject: string;
 }
 
+const RESOURCE_CATEGORIES = [
+  "Lecture Notes",
+  "Study Guide",
+  "Practice Problems",
+  "Reading Material",
+  "Reference",
+  "Other",
+];
+
 const ResourceManager = () => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [classes, setClasses] = useState<TeacherClass[]>([]);
   const [selectedClass, setSelectedClass] = useState<string>("");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
   const [newResource, setNewResource] = useState({
     title: "",
     description: "",
     class_id: "",
+    category: "",
     file: null as File | null,
   });
 
@@ -71,9 +85,6 @@ const ResourceManager = () => {
   };
 
   const fetchResources = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
     const { data, error } = await supabase
       .from("resources")
       .select(`
@@ -114,27 +125,25 @@ const ResourceManager = () => {
     if (!user) return;
 
     try {
-      // Upload file to storage
       const fileExt = newResource.file.name.split(".").pop();
       const fileName = `${user.id}/${Date.now()}.${fileExt}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("class-resources")
         .upload(fileName, newResource.file);
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from("class-resources")
         .getPublicUrl(fileName);
 
-      // Create resource record
       const { error: insertError } = await supabase
         .from("resources")
         .insert({
           class_id: newResource.class_id,
           title: newResource.title,
           description: newResource.description,
+          category: newResource.category || null,
           file_url: publicUrl,
           file_name: newResource.file.name,
           file_size: newResource.file.size,
@@ -143,13 +152,31 @@ const ResourceManager = () => {
 
       if (insertError) throw insertError;
 
+      // Notify students
+      const { data: enrollments } = await supabase
+        .from("class_enrollments")
+        .select("student_id")
+        .eq("class_id", newResource.class_id);
+
+      if (enrollments) {
+        const notifications = enrollments.map((e) => ({
+          user_id: e.student_id,
+          title: "New Resource Shared",
+          message: `A new resource "${newResource.title}" has been shared in your class`,
+          type: "resource",
+          related_id: newResource.class_id,
+        }));
+
+        await supabase.from("notifications").insert(notifications);
+      }
+
       toast({
         title: "Resource uploaded",
         description: "The resource has been shared with your class",
       });
 
       setIsDialogOpen(false);
-      setNewResource({ title: "", description: "", class_id: "", file: null });
+      setNewResource({ title: "", description: "", class_id: "", category: "", file: null });
       fetchResources();
     } catch (error: any) {
       toast({
@@ -166,7 +193,6 @@ const ResourceManager = () => {
     if (!confirm("Are you sure you want to delete this resource?")) return;
 
     try {
-      // Delete from database
       const { error: deleteError } = await supabase
         .from("resources")
         .delete()
@@ -174,10 +200,9 @@ const ResourceManager = () => {
 
       if (deleteError) throw deleteError;
 
-      // Delete from storage
-      const fileName = fileUrl.split("/").pop();
-      if (fileName) {
-        await supabase.storage.from("class-resources").remove([fileName]);
+      const pathMatch = fileUrl.match(/class-resources\/(.+)$/);
+      if (pathMatch) {
+        await supabase.storage.from("class-resources").remove([pathMatch[1]]);
       }
 
       toast({
@@ -221,9 +246,11 @@ const ResourceManager = () => {
     }
   };
 
-  const filteredResources = selectedClass
-    ? resources.filter((r) => r.class_id === selectedClass)
-    : resources;
+  const filteredResources = resources.filter((r) => {
+    const classMatch = !selectedClass || r.class_id === selectedClass;
+    const categoryMatch = selectedCategory === "all" || r.category === selectedCategory;
+    return classMatch && categoryMatch;
+  });
 
   const formatFileSize = (bytes: number | null) => {
     if (!bytes) return "Unknown size";
@@ -274,6 +301,26 @@ const ResourceManager = () => {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>Category</Label>
+                <Select
+                  value={newResource.category}
+                  onValueChange={(value) =>
+                    setNewResource({ ...newResource, category: value })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select category (optional)" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {RESOURCE_CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>
+                        {cat}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>Title *</Label>
                 <Input
                   value={newResource.title}
@@ -312,9 +359,9 @@ const ResourceManager = () => {
         </Dialog>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex gap-4 flex-wrap">
         <Select value={selectedClass} onValueChange={setSelectedClass}>
-          <SelectTrigger className="w-[280px]">
+          <SelectTrigger className="w-[240px]">
             <SelectValue placeholder="All Classes" />
           </SelectTrigger>
           <SelectContent>
@@ -322,6 +369,20 @@ const ResourceManager = () => {
             {classes.map((cls) => (
               <SelectItem key={cls.id} value={cls.id}>
                 {cls.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+          <SelectTrigger className="w-[240px]">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {RESOURCE_CATEGORIES.map((cat) => (
+              <SelectItem key={cat} value={cat}>
+                {cat}
               </SelectItem>
             ))}
           </SelectContent>
@@ -357,7 +418,12 @@ const ResourceManager = () => {
                 </div>
                 <CardTitle className="mt-2">{resource.title}</CardTitle>
                 <CardDescription>
-                  <Badge variant="outline">{resource.classes.name}</Badge>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="outline">{resource.classes.name}</Badge>
+                    {resource.category && (
+                      <Badge variant="secondary">{resource.category}</Badge>
+                    )}
+                  </div>
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -369,18 +435,38 @@ const ResourceManager = () => {
                   <p>Size: {formatFileSize(resource.file_size)}</p>
                   <p>Uploaded: {format(new Date(resource.created_at), "PP")}</p>
                 </div>
-                <Button
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => downloadResource(resource.file_url, resource.file_name)}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setPreviewFile({ url: resource.file_url, name: resource.file_name })}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview
+                  </Button>
+                  <Button
+                    variant="default"
+                    className="flex-1"
+                    onClick={() => downloadResource(resource.file_url, resource.file_name)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {previewFile && (
+        <FilePreview
+          isOpen={!!previewFile}
+          onClose={() => setPreviewFile(null)}
+          fileUrl={previewFile.url}
+          fileName={previewFile.name}
+          onDownload={() => downloadResource(previewFile.url, previewFile.name)}
+        />
       )}
     </div>
   );
