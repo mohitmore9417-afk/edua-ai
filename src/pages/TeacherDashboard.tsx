@@ -18,6 +18,7 @@ import AnnouncementManager from "@/components/AnnouncementManager";
 import TeacherAttendanceStats from "@/components/TeacherAttendanceStats";
 import IndividualStudentAttendance from "@/components/IndividualStudentAttendance";
 import AttendanceAnalytics from "@/components/AttendanceAnalytics";
+import ResourceManager from "@/components/ResourceManager";
 
 interface Class {
   id: string;
@@ -190,7 +191,7 @@ const TeacherDashboard = () => {
         </div>
 
         <Tabs defaultValue="classes" className="w-full">
-          <TabsList className="grid grid-cols-4 lg:grid-cols-8">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-9">
             <TabsTrigger value="classes">Classes</TabsTrigger>
             <TabsTrigger value="attendance">Attendance</TabsTrigger>
             <TabsTrigger value="attendance-stats">Stats</TabsTrigger>
@@ -199,6 +200,7 @@ const TeacherDashboard = () => {
             <TabsTrigger value="timetable">Timetable</TabsTrigger>
             <TabsTrigger value="announcements">Announcements</TabsTrigger>
             <TabsTrigger value="individual">Tracker</TabsTrigger>
+            <TabsTrigger value="resources">Resources</TabsTrigger>
           </TabsList>
 
           <TabsContent value="classes" className="space-y-4">
@@ -342,6 +344,10 @@ const TeacherDashboard = () => {
                 ))}
               </div>
             )}
+          </TabsContent>
+
+          <TabsContent value="resources">
+            <ResourceManager />
           </TabsContent>
         </Tabs>
       </div>
