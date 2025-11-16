@@ -10,6 +10,7 @@ import StudentTimetable from "@/components/StudentTimetable";
 import StudentAttendanceStats from "@/components/StudentAttendanceStats";
 import AttendanceAnalytics from "@/components/AttendanceAnalytics";
 import StudentResources from "@/components/StudentResources";
+import NotificationBell from "@/components/NotificationBell";
 import { BookOpen, Calendar, FileText, Bell } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -154,11 +155,13 @@ const StudentDashboard = () => {
               Welcome back! Here's your learning overview
             </p>
           </div>
-          <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <BookOpen className="w-4 h-4 mr-2" />
-                Join Class
+          <div className="flex gap-2">
+            <NotificationBell />
+            <Dialog open={isJoinDialogOpen} onOpenChange={setIsJoinDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <BookOpen className="w-4 h-4 mr-2" />
+                  Join Class
               </Button>
             </DialogTrigger>
             <DialogContent>
@@ -186,6 +189,7 @@ const StudentDashboard = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          </div>
         </div>
 
         <Tabs defaultValue="classes" className="w-full">

@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Download, FolderOpen, Search } from "lucide-react";
+import { FileText, Download, FolderOpen, Search, Eye } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import FilePreview from "@/components/FilePreview";
 
 interface Resource {
   id: string;
@@ -18,6 +19,7 @@ interface Resource {
   file_url: string;
   file_name: string;
   file_size: number | null;
+  category: string | null;
   created_at: string;
   classes: {
     name: string;
@@ -25,11 +27,22 @@ interface Resource {
   };
 }
 
+const RESOURCE_CATEGORIES = [
+  "Lecture Notes",
+  "Study Guide",
+  "Practice Problems",
+  "Reading Material",
+  "Reference",
+  "Other",
+];
+
 const StudentResources = () => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [filteredResources, setFilteredResources] = useState<Resource[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedClass, setSelectedClass] = useState<string>("all");
+  const [selectedCategory, setSelectedCategory] = useState<string>("all");
+  const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
   const [classes, setClasses] = useState<Array<{ id: string; name: string }>>([]);
 
   useEffect(() => {
@@ -38,13 +51,12 @@ const StudentResources = () => {
 
   useEffect(() => {
     filterResources();
-  }, [resources, searchQuery, selectedClass]);
+  }, [resources, searchQuery, selectedClass, selectedCategory]);
 
   const fetchResources = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Get enrolled classes
     const { data: enrollments } = await supabase
       .from("class_enrollments")
       .select("class_id, classes(id, name)")
@@ -59,7 +71,6 @@ const StudentResources = () => {
 
       const classIds = enrollments.map((e) => e.class_id);
 
-      // Get resources for enrolled classes
       const { data, error } = await supabase
         .from("resources")
         .select(`
@@ -84,7 +95,6 @@ const StudentResources = () => {
   const filterResources = () => {
     let filtered = [...resources];
 
-    // Search filter
     if (searchQuery) {
       filtered = filtered.filter(
         (r) =>
@@ -94,9 +104,12 @@ const StudentResources = () => {
       );
     }
 
-    // Class filter
     if (selectedClass !== "all") {
       filtered = filtered.filter((r) => r.class_id === selectedClass);
+    }
+
+    if (selectedCategory !== "all") {
+      filtered = filtered.filter((r) => r.category === selectedCategory);
     }
 
     setFilteredResources(filtered);
@@ -141,13 +154,12 @@ const StudentResources = () => {
         <p className="text-muted-foreground">Access study materials and files from your classes</p>
       </div>
 
-      {/* Filters */}
       <Card>
         <CardHeader>
           <CardTitle>Filter Resources</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Search</Label>
               <div className="relative">
@@ -176,18 +188,33 @@ const StudentResources = () => {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Categories</SelectItem>
+                  {RESOURCE_CATEGORIES.map((cat) => (
+                    <SelectItem key={cat} value={cat}>
+                      {cat}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Resources List */}
       {filteredResources.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16">
             <FolderOpen className="w-16 h-16 text-muted-foreground mb-4" />
             <h3 className="text-xl font-semibold mb-2">No resources found</h3>
             <p className="text-muted-foreground">
-              {searchQuery || selectedClass !== "all"
+              {searchQuery || selectedClass !== "all" || selectedCategory !== "all"
                 ? "Try adjusting your filters"
                 : "Your teachers haven't shared any resources yet"}
             </p>
@@ -204,6 +231,9 @@ const StudentResources = () => {
                   <div className="flex flex-wrap gap-2">
                     <Badge variant="outline">{resource.classes.name}</Badge>
                     <Badge variant="secondary">{resource.classes.subject}</Badge>
+                    {resource.category && (
+                      <Badge>{resource.category}</Badge>
+                    )}
                   </div>
                 </CardDescription>
               </CardHeader>
@@ -216,17 +246,37 @@ const StudentResources = () => {
                   <p>Size: {formatFileSize(resource.file_size)}</p>
                   <p>Added: {format(new Date(resource.created_at), "PP")}</p>
                 </div>
-                <Button
-                  className="w-full"
-                  onClick={() => downloadResource(resource.file_url, resource.file_name)}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Download
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setPreviewFile({ url: resource.file_url, name: resource.file_name })}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Preview
+                  </Button>
+                  <Button
+                    className="flex-1"
+                    onClick={() => downloadResource(resource.file_url, resource.file_name)}
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
         </div>
+      )}
+
+      {previewFile && (
+        <FilePreview
+          isOpen={!!previewFile}
+          onClose={() => setPreviewFile(null)}
+          fileUrl={previewFile.url}
+          fileName={previewFile.name}
+          onDownload={() => downloadResource(previewFile.url, previewFile.name)}
+        />
       )}
     </div>
   );

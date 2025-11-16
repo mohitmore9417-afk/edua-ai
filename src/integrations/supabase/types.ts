@@ -296,6 +296,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          read: boolean
+          related_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          read?: boolean
+          related_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          read?: boolean
+          related_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -328,6 +369,7 @@ export type Database = {
       }
       resources: {
         Row: {
+          category: string | null
           class_id: string
           created_at: string
           description: string | null
@@ -340,6 +382,7 @@ export type Database = {
           uploaded_by: string
         }
         Insert: {
+          category?: string | null
           class_id: string
           created_at?: string
           description?: string | null
@@ -352,6 +395,7 @@ export type Database = {
           uploaded_by: string
         }
         Update: {
+          category?: string | null
           class_id?: string
           created_at?: string
           description?: string | null
