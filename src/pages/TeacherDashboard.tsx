@@ -20,7 +20,6 @@ import TeacherAttendanceStats from "@/components/TeacherAttendanceStats";
 import IndividualStudentAttendance from "@/components/IndividualStudentAttendance";
 import AttendanceAnalytics from "@/components/AttendanceAnalytics";
 import ResourceManager from "@/components/ResourceManager";
-import AssignmentSubmissions from "@/components/AssignmentSubmissions";
 import NotificationBell from "@/components/NotificationBell";
 
 interface Class {
