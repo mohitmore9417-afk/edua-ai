@@ -46,7 +46,7 @@ const RESOURCE_CATEGORIES = [
 const ResourceManager = () => {
   const [resources, setResources] = useState<Resource[]>([]);
   const [classes, setClasses] = useState<TeacherClass[]>([]);
-  const [selectedClass, setSelectedClass] = useState<string>("");
+  const [selectedClass, setSelectedClass] = useState<string>("all");
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -247,7 +247,7 @@ const ResourceManager = () => {
   };
 
   const filteredResources = resources.filter((r) => {
-    const classMatch = !selectedClass || r.class_id === selectedClass;
+    const classMatch = selectedClass === "all" || r.class_id === selectedClass;
     const categoryMatch = selectedCategory === "all" || r.category === selectedCategory;
     return classMatch && categoryMatch;
   });
@@ -365,7 +365,7 @@ const ResourceManager = () => {
             <SelectValue placeholder="All Classes" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">All Classes</SelectItem>
+            <SelectItem value="all">All Classes</SelectItem>
             {classes.map((cls) => (
               <SelectItem key={cls.id} value={cls.id}>
                 {cls.name}
