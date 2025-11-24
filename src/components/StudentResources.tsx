@@ -115,9 +115,33 @@ const StudentResources = () => {
     setFilteredResources(filtered);
   };
 
+  const getSignedUrl = async (fileUrl: string) => {
+    try {
+      // Extract the path from the full URL
+      const path = fileUrl.split('/').slice(-1)[0];
+      
+      const { data, error } = await supabase.storage
+        .from('class-resources')
+        .createSignedUrl(path, 3600); // URL valid for 1 hour
+
+      if (error) throw error;
+      return data.signedUrl;
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: "Failed to access file",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   const downloadResource = async (fileUrl: string, fileName: string) => {
     try {
-      const response = await fetch(fileUrl);
+      const signedUrl = await getSignedUrl(fileUrl);
+      if (!signedUrl) return;
+
+      const response = await fetch(signedUrl);
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -138,6 +162,13 @@ const StudentResources = () => {
         description: error.message,
         variant: "destructive",
       });
+    }
+  };
+
+  const handlePreview = async (fileUrl: string, fileName: string) => {
+    const signedUrl = await getSignedUrl(fileUrl);
+    if (signedUrl) {
+      setPreviewFile({ url: signedUrl, name: fileName });
     }
   };
 
@@ -250,7 +281,7 @@ const StudentResources = () => {
                   <Button
                     variant="outline"
                     className="flex-1"
-                    onClick={() => setPreviewFile({ url: resource.file_url, name: resource.file_name })}
+                    onClick={() => handlePreview(resource.file_url, resource.file_name)}
                   >
                     <Eye className="w-4 h-4 mr-2" />
                     Preview
