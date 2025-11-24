@@ -30,7 +30,10 @@ const Auth = () => {
         password: loginPassword,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Login error:", error);
+        throw error;
+      }
 
       if (data.user) {
         const { data: profile, error: profileError } = await supabase
@@ -60,9 +63,20 @@ const Auth = () => {
         }, 1000);
       }
     } catch (error: any) {
+      console.error("Login failed:", error);
+      
+      let errorMessage = error.message || "An error occurred";
+      
+      // Provide more helpful error messages
+      if (error.message === "Failed to fetch") {
+        errorMessage = "Cannot connect to authentication service. Please check your internet connection and try again.";
+      } else if (error.message?.includes("Invalid login credentials")) {
+        errorMessage = "Invalid email or password. Please try again.";
+      }
+      
       toast({
         title: "Login failed",
-        description: error.message,
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {
